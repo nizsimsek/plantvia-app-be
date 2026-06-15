@@ -1,7 +1,9 @@
 import { db } from "../config/db.js";
 
 export async function listPlants(userId, { limit = 50, offset = 0 } = {}) {
-  const [[{ total }], [rows]] = await Promise.all([
+  const safeLimit = Number(limit);
+  const safeOffset = Number(offset);
+  const [[countRows], [rows]] = await Promise.all([
     db.execute("SELECT COUNT(*) AS total FROM plants WHERE user_id = ?", [userId]),
     db.execute(
       `SELECT p.id, p.name, p.species, p.image_url AS imageUrl, p.location,
@@ -12,11 +14,12 @@ export async function listPlants(userId, { limit = 50, offset = 0 } = {}) {
        LEFT JOIN watering_schedules ws ON ws.plant_id = p.id AND ws.is_active = TRUE
        WHERE p.user_id = ?
        ORDER BY p.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [userId, limit, offset]
+       LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      [userId]
     )
   ]);
-  return { items: rows, pagination: { total: Number(total), limit, offset, hasMore: offset + rows.length < Number(total) } };
+  const total = Number(countRows[0]?.total ?? 0);
+  return { items: rows, pagination: { total, limit: safeLimit, offset: safeOffset, hasMore: safeOffset + rows.length < total } };
 }
 
 export async function countPlantsByUserId(userId) {
