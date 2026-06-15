@@ -25,12 +25,12 @@ export async function sendPasswordResetEmail({ to, nickname, resetUrl }) {
 </head>
 <body>
   <div class="card">
-    <h1>Plantvia — Sifre Sifirlama</h1>
+    <h1>Plantvia — Şifre Sıfırlama</h1>
     <p>Merhaba <strong>${nickname}</strong>,</p>
-    <p>Plantvia hesabiniz icin sifre sifirlama talebinde bulundunuz. Asagidaki butona tiklayarak yeni sifrenizi belirleyebilirsiniz.</p>
-    <a href="${resetUrl}" class="btn">Sifremi Sifirla</a>
-    <p class="note">Bu baglanti <strong>1 saat</strong> boyunca gecerlidir.</p>
-    <p class="note">Eger bu istegi siz yapmadıysanız bu e-postayı gormezden gelebilirsiniz. Hesabınız guvende.</p>
+    <p>Plantvia hesabınız için şifre sıfırlama talebinde bulundunuz. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.</p>
+    <a href="${resetUrl}" class="btn">Şifremi Sıfırla</a>
+    <p class="note">Bu bağlantı <strong>1 saat</strong> boyunca geçerlidir.</p>
+    <p class="note">Eğer bu isteği siz yapmadıysanız bu e-postayı görmezden gelebilirsiniz. Hesabınız güvende.</p>
     <div class="footer">
       <p>Plantvia — Bitki bakım asistanınız</p>
     </div>
@@ -41,7 +41,7 @@ export async function sendPasswordResetEmail({ to, nickname, resetUrl }) {
   await resend.emails.send({
     from: process.env.EMAIL_FROM || "Plantvia <noreply@plantvia.app>",
     to,
-    subject: "Plantvia — Sifre Sifirlama",
+    subject: "Plantvia — Şifre Sıfırlama",
     html
   });
 }
