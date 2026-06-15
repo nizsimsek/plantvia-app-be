@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -5,9 +6,18 @@ import dotenv from "dotenv";
 import { apiRouter } from "./routes/index.js";
 import { errorMiddleware } from "./middlewares/errorMiddleware.js";
 import { requestLogger } from "./middlewares/requestLogger.js";
+import { analyticsMiddleware } from "./middlewares/analyticsMiddleware.js";
 import { startPremiumDailyNotificationScheduler } from "./services/notificationScheduler.js";
 
 dotenv.config();
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || "development",
+    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0
+  });
+}
 
 const app = express();
 
@@ -36,6 +46,7 @@ app.use(express.json({
   }
 }));
 app.use(requestLogger);
+app.use(analyticsMiddleware);
 app.use("/uploads", express.static("src/uploads", {
   dotfiles: "deny",
   fallthrough: false,
@@ -51,7 +62,8 @@ app.get("/health", (_req, res) => {
   res.json({ success: true, message: "Plantvia API is running." });
 });
 
-app.use("/api", apiRouter);
+app.use("/api/v1", apiRouter);
+if (process.env.SENTRY_DSN) Sentry.setupExpressErrorHandler(app);
 app.use(errorMiddleware);
 
 const port = process.env.PORT || 3000;

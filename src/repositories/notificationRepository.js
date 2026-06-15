@@ -13,12 +13,17 @@ export async function deactivateDeviceToken(userId, token) {
   await db.execute("UPDATE device_tokens SET is_active = FALSE WHERE user_id = ? AND token = ?", [userId, token]);
 }
 
-export async function upsertNotificationPreference({ userId, premiumDailyEnabled, dailyReminderTime, timezone }) {
+export async function upsertNotificationPreference({ userId, premiumDailyEnabled, freeWeeklyEnabled, dailyReminderTime, timezone }) {
   await db.execute(
-    `INSERT INTO notification_preferences (user_id, premium_daily_enabled, daily_reminder_time, timezone)
-     VALUES (?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE premium_daily_enabled=VALUES(premium_daily_enabled), daily_reminder_time=VALUES(daily_reminder_time), timezone=VALUES(timezone), updated_at=NOW()`,
-    [userId, premiumDailyEnabled, dailyReminderTime, timezone]
+    `INSERT INTO notification_preferences (user_id, premium_daily_enabled, free_weekly_enabled, daily_reminder_time, timezone)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       premium_daily_enabled = COALESCE(VALUES(premium_daily_enabled), premium_daily_enabled),
+       free_weekly_enabled = COALESCE(VALUES(free_weekly_enabled), free_weekly_enabled),
+       daily_reminder_time = VALUES(daily_reminder_time),
+       timezone = VALUES(timezone),
+       updated_at = NOW()`,
+    [userId, premiumDailyEnabled ?? null, freeWeeklyEnabled ?? null, dailyReminderTime, timezone]
   );
 }
 
@@ -26,6 +31,7 @@ export async function getNotificationPreference(userId) {
   const [rows] = await db.execute(
     `SELECT id, user_id AS userId,
             premium_daily_enabled AS premiumDailyEnabled,
+            free_weekly_enabled AS freeWeeklyEnabled,
             TIME_FORMAT(daily_reminder_time, '%H:%i') AS dailyReminderTime,
             timezone, created_at AS createdAt, updated_at AS updatedAt
      FROM notification_preferences
@@ -48,6 +54,7 @@ export async function listPremiumDailyNotificationTargets() {
   );
   return rows;
 }
+
 
 export async function listActiveDeviceTokensByUserId(userId) {
   const [rows] = await db.execute(

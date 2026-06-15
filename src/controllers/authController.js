@@ -35,3 +35,10 @@ export async function forgotPassword(req, res, next) {
     successResponse(res, null, "Password reset flow started successfully.");
   } catch (err) { next(err); }
 }
+
+export async function resetPassword(req, res, next) {
+  try {
+    await authService.resetPassword(req.body);
+    successResponse(res, null, "Password reset successfully. Please log in with your new password.");
+  } catch (err) { next(err); }
+}

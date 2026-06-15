@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/node";
+
 export function errorMiddleware(err, req, res, _next) {
   if (err?.code === "LIMIT_FILE_SIZE") {
     err.status = 413;
@@ -15,6 +17,9 @@ export function errorMiddleware(err, req, res, _next) {
       message: err.message,
       stack: process.env.NODE_ENV === "production" ? undefined : err.stack
     });
+    if (process.env.SENTRY_DSN) {
+      Sentry.captureException(err, { extra: { requestId: req.requestId } });
+    }
   }
 
   res.status(status).json({

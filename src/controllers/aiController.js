@@ -1,7 +1,16 @@
-import { analyzePlant } from "../services/aiService.js";
+import { analyzePlant, getAiStatus } from "../services/aiService.js";
 import { successResponse, apiError } from "../utils/apiResponse.js";
 import { assertUploadedImageIsSafe, deleteUploadedFile } from "../middlewares/uploadMiddleware.js";
 import fs from "fs/promises";
+
+export async function status(req, res, next) {
+  try {
+    const data = await getAiStatus({ user: req.user });
+    successResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function analyze(req, res, next) {
   try {
@@ -22,7 +31,8 @@ export async function analyze(req, res, next) {
       user: req.user,
       plantId: req.body.plantId || null,
       question,
-      imageBuffer
+      imageBuffer,
+      locale: req.user.language || "tr"
     });
     await deleteUploadedFile(req.file);
     successResponse(res, data, "AI analysis completed successfully.");

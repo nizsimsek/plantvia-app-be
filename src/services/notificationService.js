@@ -10,6 +10,7 @@ import {
 import { findUserByEmail, findUserById } from "../repositories/userRepository.js";
 import { sendApnsNotification } from "./apnsService.js";
 import { apiError } from "../utils/apiResponse.js";
+import { PLANS } from "../utils/constants.js";
 
 export async function registerDeviceToken(userId, data) {
   await upsertDeviceToken({ userId, ...data });
@@ -22,7 +23,7 @@ export async function removeDeviceToken(userId, token) {
 }
 
 export async function savePreferences(user, data) {
-  if (data.premiumDailyEnabled && user.plan !== "premium") {
+  if (data.premiumDailyEnabled && user.plan !== PLANS.PREMIUM) {
     throw apiError("Daily premium notifications are available for Premium users only.", 403);
   }
 

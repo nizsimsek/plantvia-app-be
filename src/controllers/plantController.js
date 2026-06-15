@@ -1,8 +1,12 @@
 import * as plantService from "../services/plantService.js";
 import { successResponse } from "../utils/apiResponse.js";
+import { paginationSchema } from "../models/schemas.js";
 
 export async function list(req, res, next) {
-  try { successResponse(res, await plantService.getPlants(req.user.id)); } catch (err) { next(err); }
+  try {
+    const { limit, offset } = paginationSchema.parse(req.query);
+    successResponse(res, await plantService.getPlants(req.user.id, { limit, offset }));
+  } catch (err) { next(err); }
 }
 
 export async function detail(req, res, next) {

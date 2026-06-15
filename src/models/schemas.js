@@ -36,6 +36,11 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(10)
 });
 
+export const resetPasswordSchema = z.object({
+  token: z.string().min(32),
+  password: z.string().min(6)
+});
+
 export const deviceTokenSchema = z.object({
   token: z.string().min(32),
   platform: z.enum(["ios"]).default("ios"),
@@ -44,7 +49,8 @@ export const deviceTokenSchema = z.object({
 });
 
 export const notificationPreferenceSchema = z.object({
-  premiumDailyEnabled: z.boolean(),
+  premiumDailyEnabled: z.boolean().optional(),
+  freeWeeklyEnabled: z.boolean().optional(),
   dailyReminderTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).default("09:00"),
   timezone: z.string().min(2).default("Europe/Istanbul")
 });
@@ -58,4 +64,13 @@ export const testPushSchema = z.object({
 
 export const updateUserSchema = z.object({
   nickname: z.string().trim().min(2, "Nickname must be at least 2 characters.").max(80)
+});
+
+export const userSettingsSchema = z.object({
+  language: z.enum(["tr", "en"])
+});
+
+export const paginationSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0)
 });

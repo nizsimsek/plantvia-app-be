@@ -12,3 +12,7 @@ export async function findRefreshToken(tokenHash) {
 export async function revokeRefreshToken(tokenHash) {
   await db.execute("UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = ?", [tokenHash]);
 }
+
+export async function revokeAllUserRefreshTokens(userId) {
+  await db.execute("UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL", [userId]);
+}

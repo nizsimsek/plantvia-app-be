@@ -2,140 +2,154 @@ CREATE DATABASE IF NOT EXISTS plantvia_db CHARACTER SET utf8mb4 COLLATE utf8mb4_
 USE plantvia_db;
 
 CREATE TABLE IF NOT EXISTS users (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  nickname VARCHAR(80) NOT NULL,
-  email VARCHAR(160) NOT NULL UNIQUE,
+  id            BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  nickname      VARCHAR(80)  NOT NULL,
+  email         VARCHAR(160) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  plan ENUM('free', 'premium') NOT NULL DEFAULT 'free',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  plan          ENUM('free', 'premium') NOT NULL DEFAULT 'free',
+  created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  updated_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
+  id         BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  user_id    BIGINT       NOT NULL,
   token_hash VARCHAR(255) NOT NULL,
-  expires_at DATETIME NOT NULL,
-  revoked_at DATETIME NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME     NOT NULL,
+  revoked_at DATETIME     NULL,
+  created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS plants (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  name VARCHAR(120) NOT NULL,
-  species VARCHAR(120),
-  image_url VARCHAR(500),
-  location VARCHAR(80) NOT NULL,
-  watering_frequency_days INT NOT NULL DEFAULT 7,
-  last_watered_at DATETIME NOT NULL,
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id                     BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  user_id                BIGINT       NOT NULL,
+  name                   VARCHAR(120) NOT NULL,
+  species                VARCHAR(120),
+  image_url              VARCHAR(500),
+  location               VARCHAR(80)  NOT NULL,
+  watering_frequency_days INT         NOT NULL DEFAULT 7,
+  last_watered_at        DATETIME     NOT NULL,
+  notes                  TEXT,
+  created_at             TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  updated_at             TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS watering_logs (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  plant_id BIGINT NOT NULL,
-  watered_at DATETIME NOT NULL,
-  note TEXT,
+  id         BIGINT    PRIMARY KEY AUTO_INCREMENT,
+  user_id    BIGINT    NOT NULL,
+  plant_id   BIGINT    NOT NULL,
+  watered_at DATETIME  NOT NULL,
+  note       TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE CASCADE,
   FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS watering_schedules (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  plant_id BIGINT NOT NULL,
-  reminder_time TIME NOT NULL,
-  custom_days JSON NULL,
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  id           BIGINT    PRIMARY KEY AUTO_INCREMENT,
+  plant_id     BIGINT    NOT NULL,
+  reminder_time TIME     NOT NULL,
+  custom_days  JSON      NULL,
+  is_active    BOOLEAN   DEFAULT TRUE,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS subscriptions (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL UNIQUE,
+  id                 BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  user_id            BIGINT       NOT NULL UNIQUE,
   revenuecat_user_id VARCHAR(160) NOT NULL,
-  product_id VARCHAR(160) NOT NULL,
-  status VARCHAR(40) NOT NULL,
-  expires_at DATETIME NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  product_id         VARCHAR(160) NOT NULL,
+  status             VARCHAR(40)  NOT NULL,
+  expires_at         DATETIME     NULL,
+  created_at         TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  updated_at         TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS ai_analysis_requests (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  plant_id BIGINT NULL,
-  question TEXT NOT NULL,
-  answer TEXT NOT NULL,
+  id               BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  user_id          BIGINT       NOT NULL,
+  plant_id         BIGINT       NULL,
+  question         TEXT         NOT NULL,
+  answer           TEXT         NOT NULL,
   confidence_level VARCHAR(40),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE SET NULL
+  created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ai_analysis_user_created (user_id, created_at),
+  FOREIGN KEY (user_id)  REFERENCES users(id)   ON DELETE CASCADE,
+  FOREIGN KEY (plant_id) REFERENCES plants(id)  ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_settings (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL UNIQUE,
-  theme VARCHAR(20) DEFAULT 'system',
-  language VARCHAR(20) DEFAULT 'tr',
-  notifications_enabled BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id                    BIGINT    PRIMARY KEY AUTO_INCREMENT,
+  user_id               BIGINT    NOT NULL UNIQUE,
+  theme                 VARCHAR(20)  DEFAULT 'system',
+  language              VARCHAR(20)  DEFAULT 'tr',
+  notifications_enabled BOOLEAN      DEFAULT TRUE,
+  created_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  updated_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS device_tokens (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  token VARCHAR(255) NOT NULL UNIQUE,
-  platform ENUM('ios') NOT NULL DEFAULT 'ios',
+  id          BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  user_id     BIGINT       NOT NULL,
+  token       VARCHAR(255) NOT NULL UNIQUE,
+  platform    ENUM('ios')  NOT NULL DEFAULT 'ios',
   environment ENUM('sandbox', 'production') NOT NULL DEFAULT 'sandbox',
   app_version VARCHAR(40),
-  is_active BOOLEAN DEFAULT TRUE,
-  last_seen_at DATETIME NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  is_active   BOOLEAN      DEFAULT TRUE,
+  last_seen_at DATETIME    NULL,
+  created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS notification_preferences (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL UNIQUE,
-  premium_daily_enabled BOOLEAN DEFAULT FALSE,
-  daily_reminder_time TIME DEFAULT '09:00:00',
-  timezone VARCHAR(80) DEFAULT 'Europe/Istanbul',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id                    BIGINT    PRIMARY KEY AUTO_INCREMENT,
+  user_id               BIGINT    NOT NULL UNIQUE,
+  premium_daily_enabled BOOLEAN   DEFAULT FALSE,
+  free_weekly_enabled   BOOLEAN   DEFAULT FALSE,
+  daily_reminder_time   TIME      DEFAULT '09:00:00',
+  timezone              VARCHAR(80) DEFAULT 'Europe/Istanbul',
+  created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS notification_deliveries (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  device_token VARCHAR(255) NOT NULL,
-  type VARCHAR(80) NOT NULL,
-  title VARCHAR(180) NOT NULL,
-  body TEXT NOT NULL,
-  status ENUM('dry_run', 'sent', 'failed') NOT NULL,
-  provider_response JSON NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  id               BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  user_id          BIGINT       NOT NULL,
+  device_token     VARCHAR(255) NOT NULL,
+  type             VARCHAR(80)  NOT NULL,
+  title            VARCHAR(180) NOT NULL,
+  body             TEXT         NOT NULL,
+  status           ENUM('dry_run', 'sent', 'failed') NOT NULL,
+  provider_response JSON        NULL,
+  created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id         BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  user_id    BIGINT       NOT NULL,
+  token_hash VARCHAR(255) NOT NULL UNIQUE,
+  expires_at DATETIME     NOT NULL,
+  used_at    DATETIME     NULL,
+  created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_prt_token_hash  (token_hash),
+  INDEX idx_prt_expires_at  (expires_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS internal_job_nonces (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  client_id VARCHAR(120) NOT NULL,
-  nonce VARCHAR(120) NOT NULL,
-  expires_at DATETIME NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  id         BIGINT       PRIMARY KEY AUTO_INCREMENT,
+  client_id  VARCHAR(120) NOT NULL,
+  nonce      VARCHAR(120) NOT NULL,
+  expires_at DATETIME     NOT NULL,
+  created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_internal_job_client_nonce (client_id, nonce),
   INDEX idx_internal_job_nonces_expires_at (expires_at)
 );

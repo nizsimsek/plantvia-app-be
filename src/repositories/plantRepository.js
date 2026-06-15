@@ -1,18 +1,22 @@
 import { db } from "../config/db.js";
 
-export async function listPlants(userId) {
-  const [rows] = await db.execute(
-    `SELECT p.id, p.name, p.species, p.image_url AS imageUrl, p.location,
-            watering_frequency_days AS wateringFrequencyDays,
-            TIME_FORMAT(ws.reminder_time, '%H:%i') AS reminderTime,
-            p.last_watered_at AS lastWateredAt, p.notes, p.created_at AS createdAt
-     FROM plants p
-     LEFT JOIN watering_schedules ws ON ws.plant_id = p.id AND ws.is_active = TRUE
-     WHERE p.user_id = ?
-     ORDER BY p.created_at DESC`,
-    [userId]
-  );
-  return rows;
+export async function listPlants(userId, { limit = 50, offset = 0 } = {}) {
+  const [[{ total }], [rows]] = await Promise.all([
+    db.execute("SELECT COUNT(*) AS total FROM plants WHERE user_id = ?", [userId]),
+    db.execute(
+      `SELECT p.id, p.name, p.species, p.image_url AS imageUrl, p.location,
+              watering_frequency_days AS wateringFrequencyDays,
+              TIME_FORMAT(ws.reminder_time, '%H:%i') AS reminderTime,
+              p.last_watered_at AS lastWateredAt, p.notes, p.created_at AS createdAt
+       FROM plants p
+       LEFT JOIN watering_schedules ws ON ws.plant_id = p.id AND ws.is_active = TRUE
+       WHERE p.user_id = ?
+       ORDER BY p.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [userId, limit, offset]
+    )
+  ]);
+  return { items: rows, pagination: { total: Number(total), limit, offset, hasMore: offset + rows.length < Number(total) } };
 }
 
 export async function countPlantsByUserId(userId) {

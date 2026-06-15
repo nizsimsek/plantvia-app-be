@@ -1,6 +1,6 @@
 import { sendPremiumDailyNotifications } from "./notificationService.js";
 
-const DEFAULT_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export function startPremiumDailyNotificationScheduler() {
   if (process.env.PREMIUM_DAILY_NOTIFICATION_SCHEDULER_ENABLED !== "true") {
@@ -8,7 +8,7 @@ export function startPremiumDailyNotificationScheduler() {
     return;
   }
 
-  const intervalMs = Number(process.env.PREMIUM_DAILY_NOTIFICATION_INTERVAL_MS || DEFAULT_INTERVAL_MS);
+  const intervalMs = Number(process.env.PREMIUM_DAILY_NOTIFICATION_INTERVAL_MS || DEFAULT_DAILY_INTERVAL_MS);
   if (!Number.isFinite(intervalMs) || intervalMs < 10000) {
     throw new Error("PREMIUM_DAILY_NOTIFICATION_INTERVAL_MS must be at least 10000.");
   }

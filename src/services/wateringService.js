@@ -4,8 +4,8 @@ export async function logWatering(userId, data) {
   return addWateringLog(userId, data);
 }
 
-export async function getWateringLogs(userId, plantId) {
-  return listWateringLogs(userId, plantId);
+export async function getWateringLogs(userId, plantId, pagination = {}) {
+  return listWateringLogs(userId, plantId, pagination);
 }
 
 export async function getCalendarTasks(userId, startDate, endDate) {

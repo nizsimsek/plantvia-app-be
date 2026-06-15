@@ -2,13 +2,19 @@ import crypto from "crypto";
 import { upsertSubscription } from "../repositories/subscriptionRepository.js";
 import { updateUserPlan } from "../repositories/userRepository.js";
 import { apiError } from "../utils/apiResponse.js";
+import { PLANS } from "../utils/constants.js";
 
 const revenueCatApiBaseUrl = "https://api.revenuecat.com/v1";
 
 export function verifyRevenueCatWebhook(rawBody, signature) {
-  if (!process.env.REVENUECAT_WEBHOOK_SECRET) return true;
+  if (!process.env.REVENUECAT_WEBHOOK_SECRET) {
+    throw new Error("REVENUECAT_WEBHOOK_SECRET env var is not set.");
+  }
   const expected = crypto.createHmac("sha256", process.env.REVENUECAT_WEBHOOK_SECRET).update(rawBody).digest("hex");
-  return signature === expected;
+  const a = Buffer.from(signature || "");
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
 
 export async function syncRevenueCatStatusForUser(userId) {
@@ -33,7 +39,7 @@ export async function syncRevenueCatStatusForUser(userId) {
     expiresAt
   });
 
-  await updateUserPlan(userId, isActive ? "premium" : "free");
+  await updateUserPlan(userId, isActive ? PLANS.PREMIUM : PLANS.FREE);
 
   return {
     premium: isActive,
@@ -43,11 +49,21 @@ export async function syncRevenueCatStatusForUser(userId) {
   };
 }
 
+const PREMIUM_GRANTING_EVENTS = new Set(["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "PRODUCT_CHANGE"]);
+const PREMIUM_REVOKING_EVENTS = new Set(["EXPIRATION"]);
+
 export async function handleRevenueCatEvent(event) {
   const appUserId = Number(event.app_user_id);
   if (!appUserId) throw apiError("RevenueCat app_user_id must be a user id.", 422);
 
-  const isActive = ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "PRODUCT_CHANGE"].includes(event.type);
+  const isGranting = PREMIUM_GRANTING_EVENTS.has(event.type);
+  const isRevoking = PREMIUM_REVOKING_EVENTS.has(event.type);
+
+  if (!isGranting && !isRevoking) {
+    return { premium: null, skipped: true, eventType: event.type };
+  }
+
+  const isActive = isGranting;
   const status = isActive ? "active" : "inactive";
 
   await upsertSubscription({
@@ -58,7 +74,7 @@ export async function handleRevenueCatEvent(event) {
     expiresAt: event.expiration_at_ms ? new Date(event.expiration_at_ms) : null
   });
 
-  await updateUserPlan(appUserId, isActive ? "premium" : "free");
+  await updateUserPlan(appUserId, isActive ? PLANS.PREMIUM : PLANS.FREE);
   return { premium: isActive };
 }
 

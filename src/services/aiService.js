@@ -2,21 +2,33 @@ import { countTodayAiRequests, saveAiRequest } from "../repositories/aiRepositor
 import { findPlantById } from "../repositories/plantRepository.js";
 import { analyzePlantWithOpenAI } from "./openaiService.js";
 import { apiError } from "../utils/apiResponse.js";
+import { PLANS } from "../utils/constants.js";
 
-export async function analyzePlant({ user, plantId, question, imageBuffer }) {
-  if (user.plan !== "premium") {
+const getDailyLimit = () => Number(process.env.PREMIUM_DAILY_AI_LIMIT || 50);
+
+export async function getAiStatus({ user }) {
+  if (user.plan !== PLANS.PREMIUM) {
+    throw apiError("AI Plant Assistant is available for Premium users only.", 403);
+  }
+  const limit = getDailyLimit();
+  const used = await countTodayAiRequests(user.id);
+  return { used, remaining: Math.max(0, limit - used), limit };
+}
+
+export async function analyzePlant({ user, plantId, question, imageBuffer, locale = "en" }) {
+  if (user.plan !== PLANS.PREMIUM) {
     throw apiError("AI Plant Assistant is available for Premium users only.", 403);
   }
 
-  const limit = Number(process.env.PREMIUM_DAILY_AI_LIMIT || 50);
+  const limit = getDailyLimit();
   const todayUsage = await countTodayAiRequests(user.id);
   if (todayUsage >= limit) throw apiError("Daily Premium AI analysis limit reached. Please try again tomorrow.", 429);
-  
+
   const plant = plantId ? await findPlantById(user.id, plantId) : null;
 
   let analysis;
   try {
-    analysis = await analyzePlantWithOpenAI({ imageBuffer, question, plant });
+    analysis = await analyzePlantWithOpenAI({ imageBuffer, question, plant, locale });
   } catch (error) {
     console.error("OpenAI plant analysis failed:", {
       message: error.message,
@@ -31,6 +43,7 @@ export async function analyzePlant({ user, plantId, question, imageBuffer }) {
     answer: analysis.answer,
     suggestions: analysis.suggestions,
     confidenceLevel: analysis.confidenceLevel,
-    warning: analysis.warning
+    warning: analysis.warning,
+    remaining: Math.max(0, limit - (todayUsage + 1))
   };
 }

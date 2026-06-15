@@ -14,12 +14,15 @@ export async function addWateringLog(userId, { plantId, wateredAt, note }) {
   return rows[0];
 }
 
-export async function listWateringLogs(userId, plantId) {
-  const [rows] = await db.execute(
-    "SELECT id, plant_id AS plantId, watered_at AS wateredAt, note FROM watering_logs WHERE user_id = ? AND plant_id = ? ORDER BY watered_at DESC",
-    [userId, plantId]
-  );
-  return rows;
+export async function listWateringLogs(userId, plantId, { limit = 50, offset = 0 } = {}) {
+  const [[{ total }], [rows]] = await Promise.all([
+    db.execute("SELECT COUNT(*) AS total FROM watering_logs WHERE user_id = ? AND plant_id = ?", [userId, plantId]),
+    db.execute(
+      "SELECT id, plant_id AS plantId, watered_at AS wateredAt, note FROM watering_logs WHERE user_id = ? AND plant_id = ? ORDER BY watered_at DESC LIMIT ? OFFSET ?",
+      [userId, plantId, limit, offset]
+    )
+  ]);
+  return { items: rows, pagination: { total: Number(total), limit, offset, hasMore: offset + rows.length < Number(total) } };
 }
 
 export async function listCalendarTasks(userId, startDate, endDate) {
